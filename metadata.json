@@ -1,0 +1,6 @@
+{
+  "name": "English Friend — разговорный тренажёр",
+  "description": "Разговаривайте по-английски с другом. Он придумает ситуацию и поможет с ошибками.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
