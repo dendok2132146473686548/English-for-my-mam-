@@ -22,6 +22,7 @@ import { HomeScreen } from './components/HomeScreen.tsx';
 import { ChatScreen } from './components/ChatScreen.tsx';
 import { ProgressScreen } from './components/ProgressScreen.tsx';
 import { ReportModal } from './components/ReportModal.tsx';
+import { MobileBottomNav } from './components/MobileBottomNav.tsx';
 import { requestReport } from './services/apiClient.ts';
 import { stopSpeaking } from './services/speech.ts';
 
@@ -137,7 +138,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-indigo-500 selection:text-white font-sans">
+    <div className="min-h-[100dvh] flex flex-col bg-slate-50 text-slate-900 selection:bg-indigo-500 selection:text-white font-sans">
       <Navbar
         currentView={currentView}
         onNavigate={(v) => {
@@ -153,7 +154,7 @@ export function App() {
         hasActiveSession={!!activeSession}
       />
 
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col min-h-0">
         {currentView === 'home' && (
           <HomeScreen
             profile={profile}
@@ -196,6 +197,16 @@ export function App() {
           />
         )}
       </main>
+
+      {/* Mobile Bottom Navigation (for Home & Progress) */}
+      <MobileBottomNav
+        currentView={currentView}
+        onNavigate={(v) => {
+          stopSpeaking();
+          setCurrentView(v);
+        }}
+        hasActiveSession={Boolean(activeSession && activeSession.messages.length > 0)}
+      />
 
       {/* End of conversation report modal */}
       {activeReport && (

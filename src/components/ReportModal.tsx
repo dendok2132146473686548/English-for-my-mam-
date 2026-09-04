@@ -44,21 +44,21 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[90dvh] flex flex-col">
         {/* Header */}
-        <div className="bg-linear-to-r from-indigo-600 to-indigo-800 px-6 py-5 text-white text-center shrink-0">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-xs text-white mb-2">
-            <Award className="h-6 w-6" />
+        <div className="bg-linear-to-r from-indigo-600 to-indigo-800 px-4 py-4 sm:px-6 sm:py-5 text-white text-center shrink-0">
+          <div className="inline-flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-xs text-white mb-1.5 sm:mb-2">
+            <Award className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <h2 className="text-xl sm:text-2xl font-extrabold font-display">Результаты разговора</h2>
+          <h2 className="text-lg sm:text-2xl font-extrabold font-display">Результаты разговора</h2>
           <p className="text-indigo-100 text-xs sm:text-sm mt-0.5">
             Тема: «{situationTitle}» • Уровень {level} • {minutes} мин ({totalTurns} ответов)
           </p>
         </div>
 
         {/* Content Body */}
-        <div className="p-5 sm:p-7 overflow-y-auto space-y-6 text-slate-900 text-sm">
+        <div className="p-4 sm:p-7 overflow-y-auto space-y-5 sm:space-y-6 text-slate-900 text-sm overscroll-contain">
           {/* Scores Grid */}
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Оценки за разговор</h3>
@@ -162,11 +162,11 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+        <div className="p-3 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 sm:gap-3 shrink-0 pb-safe">
           <button
             id="btn-report-progress"
             onClick={onGoToProgress}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 active:bg-slate-200 text-slate-700 font-semibold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
           >
             <BarChart2 className="h-4 w-4" />
             <span>Мой прогресс</span>
@@ -175,7 +175,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
           <button
             id="btn-report-new-conversation"
             onClick={onNewConversation}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
           >
             <RotateCcw className="h-4 w-4" />
             <span>Новый разговор</span>

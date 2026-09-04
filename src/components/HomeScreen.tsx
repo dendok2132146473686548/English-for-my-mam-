@@ -66,7 +66,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateToProgress,
 }) => {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10 space-y-6">
+    <div className="mx-auto max-w-2xl px-4 py-5 sm:py-10 pb-24 md:pb-10 space-y-5 sm:space-y-6">
       {/* Friendly Hero Banner */}
       <div className="text-center space-y-3">
         <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-linear-to-tr from-indigo-500 to-indigo-700 text-white shadow-xl shadow-indigo-200 ring-4 ring-white mx-auto">

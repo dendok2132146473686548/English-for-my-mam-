@@ -82,33 +82,33 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
   );
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 sm:py-8 space-y-6">
+    <div className="mx-auto max-w-4xl px-4 py-5 sm:py-8 pb-24 md:pb-8 space-y-5 sm:space-y-6">
       {/* Title & Start Conversation Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">
             Мой прогресс
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Ваши успехи, словарный запас и история разговоров с Alex
           </p>
         </div>
         <button
           id="btn-progress-start-talk"
           onClick={onStartConversation}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-5 py-2.5 shadow-md shadow-indigo-200 transition-all cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-sm px-5 py-3 sm:py-2.5 shadow-md shadow-indigo-200 transition-all cursor-pointer min-h-[44px]"
         >
           <MessageSquare className="h-4 w-4" />
           <span>Начать разговор</span>
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 gap-2">
+      {/* Tabs with smooth horizontal scrolling on mobile */}
+      <div className="flex border-b border-slate-200 gap-2 overflow-x-auto no-scrollbar">
         <button
           id="tab-overview"
           onClick={() => setActiveTab('overview')}
-          className={`pb-3 px-3 text-sm font-bold border-b-2 transition-colors cursor-pointer ${
+          className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-colors cursor-pointer shrink-0 ${
             activeTab === 'overview'
               ? 'border-indigo-600 text-indigo-600'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -119,28 +119,28 @@ export const ProgressScreen: React.FC<ProgressScreenProps> = ({
         <button
           id="tab-vocabulary"
           onClick={() => setActiveTab('vocabulary')}
-          className={`pb-3 px-3 text-sm font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+          className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
             activeTab === 'vocabulary'
               ? 'border-indigo-600 text-indigo-600'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
           <span>📚 Мой словарь</span>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 font-bold">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600 font-bold">
             {profile.savedVocabulary.length}
           </span>
         </button>
         <button
           id="tab-history"
           onClick={() => setActiveTab('history')}
-          className={`pb-3 px-3 text-sm font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+          className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
             activeTab === 'history'
               ? 'border-indigo-600 text-indigo-600'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
           <span>📜 Прошлые беседы</span>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 font-bold">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600 font-bold">
             {sessions.length}
           </span>
         </button>
