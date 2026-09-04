@@ -91,3 +91,21 @@ export async function requestReport(params: {
   // Graceful fallback
   return generateFallbackReport(params);
 }
+
+export async function checkServerStatus(): Promise<{ aiAvailable: boolean; mode: string }> {
+  try {
+    const res = await fetch('/api/status');
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
+      const data = await res.json();
+      return {
+        aiAvailable: Boolean(data.aiAvailable),
+        mode: data.mode || 'unknown',
+      };
+    }
+  } catch (err) {
+    console.warn('Backend /api/status error:', err);
+  }
+  return { aiAvailable: false, mode: 'local-fallback' };
+}
+

@@ -44,9 +44,12 @@ export const EvaluationBadge: React.FC<EvaluationBadgeProps> = ({ evaluation, mo
 
   const hasCorrections = corrections && corrections.length > 0;
   const isOffTopic = contextStatus === 'off_topic';
+  const isUnnatural = naturalnessStatus === 'unnatural';
+  const hasGrammarIssues = grammarStatus === 'error' || grammarStatus === 'minor';
+  const hasVocabIssues = vocabularyStatus === 'error' || vocabularyStatus === 'minor';
 
-  // 2. Perfectly correct with no errors
-  if (!hasCorrections && !isOffTopic) {
+  // 2. Completely correct with no errors and natural phrasing
+  if (!hasCorrections && !isOffTopic && !isUnnatural && !hasGrammarIssues && !hasVocabIssues) {
     return (
       <div className="mt-2.5 rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 text-emerald-950 shadow-xs">
         <div className="flex items-center justify-between gap-2">
@@ -69,6 +72,42 @@ export const EvaluationBadge: React.FC<EvaluationBadgeProps> = ({ evaluation, mo
               <span className="font-medium text-emerald-700">Более естественно: </span>
               <span className="italic">{betterSentence}</span>
             </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 2b. Understandable but unnatural or off-topic (no hard grammar/vocab corrections)
+  if (!hasCorrections && (isUnnatural || isOffTopic || hasGrammarIssues || hasVocabIssues)) {
+    return (
+      <div className="mt-2.5 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-amber-950 shadow-xs space-y-2">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+          <span className="font-semibold text-xs tracking-wide uppercase text-amber-800">
+            {isOffTopic ? 'Не по теме' : 'Совет по фразе'}
+          </span>
+          <span className="text-xs text-amber-900">
+            {isOffTopic
+              ? 'Ответ понятен, но не совсем соответствует вопросу собеседника'
+              : 'Ответ понятен, но звучит не совсем полно или естественно'}
+          </span>
+        </div>
+
+        {betterSentence && (
+          <div className="pt-2 border-t border-amber-200/70 flex items-start gap-1.5 text-xs text-amber-900">
+            <Sparkles className="h-3.5 w-3.5 text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-medium text-amber-800">Лучше сказать так: </span>
+              <span className="italic font-semibold text-amber-950">{betterSentence}</span>
+            </div>
+          </div>
+        )}
+
+        {teacherExplanationRu && (
+          <div className="pt-1.5 border-t border-amber-200/50 flex items-start gap-1.5 text-xs text-amber-900">
+            <BookOpen className="h-3.5 w-3.5 text-amber-700 shrink-0 mt-0.5" />
+            <p className="text-[11px] leading-relaxed text-amber-900">{teacherExplanationRu}</p>
           </div>
         )}
       </div>

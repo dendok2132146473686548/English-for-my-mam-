@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { EvaluationBadge } from './EvaluationBadge.tsx';
 import { speakText, stopSpeaking, isSpeaking, startListening, stopListening, isSpeechRecognitionSupported } from '../services/speech.ts';
-import { requestChatReply, requestEvaluation } from '../services/apiClient.ts';
+import { requestChatReply, requestEvaluation, checkServerStatus } from '../services/apiClient.ts';
 import { addKnownFactToProfile } from '../services/storage.ts';
 
 interface ChatScreenProps {
@@ -51,9 +51,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   const [micStatusText, setMicStatusText] = useState('');
   const [showIdeas, setShowIdeas] = useState(false);
   const [activeAudioMessageId, setActiveAudioMessageId] = useState<string | null>(null);
+  const [serverStatus, setServerStatus] = useState<{ aiAvailable: boolean; mode: string } | null>(null);
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    checkServerStatus().then(status => setServerStatus(status));
+  }, []);
 
   const scrollToBottom = () => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -280,13 +285,30 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
             💬
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-bold text-slate-900 text-xs sm:text-sm truncate font-display">
                 {session.situationTitle || 'Разговор на английском'}
               </span>
               <span className="rounded-md bg-indigo-50 border border-indigo-100 px-1.5 py-0.2 text-[10px] sm:text-[11px] font-bold text-indigo-700 shrink-0">
                 {session.level}
               </span>
+              {serverStatus && (
+                <span
+                  className={`hidden sm:inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 ${
+                    serverStatus.aiAvailable
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-amber-50 text-amber-800 border border-amber-200'
+                  }`}
+                  title={
+                    serverStatus.aiAvailable
+                      ? 'Gemini AI подключен и проверяет фразы в реальном времени'
+                      : 'Автономный режим (добавьте GEMINI_API_KEY в Render Environment Variables для подключения облачного ИИ)'
+                  }
+                >
+                  <Sparkles className="h-2.5 w-2.5" />
+                  {serverStatus.aiAvailable ? 'Gemini AI' : 'Автономный режим'}
+                </span>
+              )}
             </div>
             <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
               {session.mode === 'gentle' ? '🌸 Мягкий' : session.mode === 'normal' ? '⚖️ Обычный' : '🎓 Учитель'}

@@ -485,6 +485,62 @@ export const COMMON_RULES: RuleDef[] = [
     type: 'vocabulary',
     explanationRu: 'Товар может быть "expensive", но сама цена бывает "high" (высокая) или "low" (низкая).',
   },
+  // 33. "than" used as thank you
+  {
+    pattern: /(^|[,\s])than([,\s]|$)/i,
+    original: (m) => m[0].trim().replace(/,/g, ''),
+    correction: () => 'thanks',
+    type: 'vocabulary',
+    explanationRu: 'Слово "than" означает "чем" при сравнении. Для благодарности используется "thanks" или "thank you".',
+  },
+  // 34. Missing verb "to be" with it/this/that + adjective
+  {
+    pattern: /\b(it|this|that)\s+(good|bad|nice|great|expensive|cheap|cold|warm|hot|delicious)\b/i,
+    original: (m) => m[0],
+    correction: (m) => `${m[1]} is ${m[2]}`,
+    type: 'grammar',
+    explanationRu: 'В английском предложении обязательно нужен глагол-связка "is" (например, "it is" или "it\'s").',
+  },
+  // 35. Missing article with deal
+  {
+    pattern: /\b(good|great|bad)\s+deal\b/i,
+    original: (m) => m[0],
+    correction: (m) => `a ${m[0]}`,
+    type: 'grammar',
+    explanationRu: 'Перед исчисляемым существительным "deal" с прилагательным нужен неопределенный артикль "a" (a good deal).',
+  },
+  // 36. Missing verb "to be" with "I" + adjective
+  {
+    pattern: /\bi\s+(happy|sad|tired|hungry|ready|cold|warm|sure|sorry|busy)\b/i,
+    original: (m) => m[0],
+    correction: (m) => `I am ${m[1]}`,
+    type: 'grammar',
+    explanationRu: 'Не забывайте вспомогательный глагол "am" (например, "I am" или "I\'m").',
+  },
+  // 37. "I very like" -> "I really like"
+  {
+    pattern: /\bvery\s+(like|love|want)\b/i,
+    original: (m) => m[0],
+    correction: (m) => `really ${m[1]}`,
+    type: 'vocabulary',
+    explanationRu: 'С глаголами используется "really" или "very much", а не "very" напрямую.',
+  },
+  // 38. "every days" -> "every day"
+  {
+    pattern: /\bevery\s+days\b/i,
+    original: () => 'every days',
+    correction: () => 'every day',
+    type: 'grammar',
+    explanationRu: 'После слова "every" существительное всегда стоит в единственном числе: "every day".',
+  },
+  // 39. "much people" -> "many people"
+  {
+    pattern: /\bmuch\s+(people|friends|books|questions)\b/i,
+    original: (m) => m[0],
+    correction: (m) => `many ${m[1]}`,
+    type: 'grammar',
+    explanationRu: 'С исчисляемыми существительными во множественном числе используется "many", а не "much".',
+  },
 ];
 
 // Whitelist of natural conversational expressions that must NEVER be flagged as errors
@@ -547,6 +603,31 @@ export function evaluateAnswerLocally(params: {
       scores: { grammar: 100, vocabulary: 100, naturalness: 100, context: 100 },
       teacherExplanationRu: 'Отличный живой ответ! В разговорной речи звучит естественно и грамотно.',
     };
+  }
+
+  // 2.5 Single isolated adjective check (e.g. "sad", "good" when answering open question)
+  const cleanWords = trimmed.replace(/[.,!?;:]/g, '').split(/\s+/).filter(Boolean);
+  if (cleanWords.length === 1 && !isNaturalConversationalEllipsis(trimmed)) {
+    const single = cleanWords[0].toLowerCase();
+    const commonAdjectives = ['sad', 'happy', 'tired', 'angry', 'hungry', 'cold', 'warm', 'fine', 'good', 'bad', 'bored', 'busy'];
+    if (commonAdjectives.includes(single)) {
+      return {
+        isGibberish: false,
+        grammarStatus: 'minor',
+        vocabularyStatus: 'correct',
+        naturalnessStatus: 'unnatural',
+        contextStatus: 'relevant',
+        corrections: [{
+          original: trimmed,
+          correction: `I feel ${single}`,
+          type: 'grammar',
+          explanationRu: `Одиночное слово "${trimmed}" звучит слишком отрывисто. В диалоге лучше ответить полной фразой: "I feel ${single}" или "I'm ${single}".`,
+        }],
+        betterSentence: `I feel ${single}.`,
+        scores: { grammar: 70, vocabulary: 85, naturalness: 60, context: 70 },
+        teacherExplanationRu: `Ваш ответ понятен, но для разговорной практики старайтесь строить полные предложения, например: "I feel ${single}".`,
+      };
+    }
   }
 
   // 3. Rule-based correction matching

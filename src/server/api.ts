@@ -82,3 +82,13 @@ export async function handleReportRoute(req: Request, res: Response) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export function handleStatusRoute(_req: Request, res: Response) {
+  const hasKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0);
+  return res.json({
+    status: 'ok',
+    aiAvailable: hasKey,
+    mode: hasKey ? 'cloud-gemini' : 'local-fallback',
+  });
+}
+

@@ -24,8 +24,26 @@ function getAiClient(): GoogleGenAI | null {
   return aiInstance;
 }
 
-// Order of models to use. If one hits 429 (quota limit) or 503 (high demand), the engine cascades to the next.
-const CANDIDATE_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'];
+// Order of models to use. Uses valid official Gemini models.
+const CANDIDATE_MODELS = ['gemini-3.8-flash', 'gemini-3.1-flash-lite'];
+
+export function isGeminiConfigured(): boolean {
+  return Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0);
+}
+
+function cleanJsonText(raw?: string): string {
+  if (!raw) return '';
+  let text = raw.trim();
+  if (text.startsWith('```json')) {
+    text = text.slice(7);
+  } else if (text.startsWith('```')) {
+    text = text.slice(3);
+  }
+  if (text.endsWith('```')) {
+    text = text.slice(0, -3);
+  }
+  return text.trim();
+}
 
 async function generateWithFallback(
   ai: GoogleGenAI,
@@ -142,7 +160,7 @@ RULES:
       },
     });
 
-    const text = response.text?.trim();
+    const text = cleanJsonText(response.text);
     if (!text) return null;
     const parsed = JSON.parse(text);
     return {
@@ -185,20 +203,31 @@ Student's reply:
 CRITICAL RULES FOR APPROPRIATENESS OF ERRORS ("УМЕСТНОСТЬ ОШИБОК")
 =======================================================
 
-1. REAL, UNDISPUTED ERRORS ONLY:
+1. REAL, UNDISPUTED ERRORS:
    - A mistake must ONLY be flagged if it violates standard English grammar or lexical collocations.
    - NEVER invent or manufacture errors. If the sentence is grammatically and idiomatically sound, mark grammarStatus: 'correct', vocabularyStatus: 'correct', and corrections: [].
-   - DO NOT treat natural variations, colloquialisms, or stylistic preferences as errors!
-   - DO NOT penalize natural conversational answers or ellipsis:
-     * "A cup of tea with milk, please." -> 100% CORRECT (do NOT claim a subject/verb is missing!).
+   - DO NOT treat natural variations, colloquialisms, or stylistic preferences as errors.
+   - Genuine natural conversational answers or ellipsis ARE fully correct:
+     * "A cup of tea with milk, please." -> 100% CORRECT.
      * "Two tickets to London, please." -> 100% CORRECT.
-     * "Can I have a coffee?" -> 100% CORRECT (do NOT say "must be may I").
-     * "I'm good, thanks!" -> 100% CORRECT (do NOT say "must be I'm well").
+     * "Can I have a coffee?" -> 100% CORRECT.
+     * "I'm good, thanks!" -> 100% CORRECT.
      * "Sure, that sounds great." -> 100% CORRECT.
      * "I'd love to!" -> 100% CORRECT.
      * "Just looking around, thank you." -> 100% CORRECT.
-   - DO NOT mark missing final punctuation (periods at the end of a chat message) or casual lowercase letters as a grammar error.
-   - DO NOT penalize American vs British spelling differences (e.g., color/colour, traveling/travelling).
+   - DO NOT mark missing final punctuation or lowercase letters as grammar errors.
+   - DO NOT penalize American vs British spelling differences (color/colour).
+
+   ▶ TELEGRAPHIC & BROKEN SPEECH MUST BE FLAGGED:
+   - If the student uses broken, telegraphic fragments missing linking verbs ("to be"), subjects, or necessary articles (e.g. "than, it good deal", "me like", "jacket nice", "it good"):
+     * "than" instead of "thanks / thank you" is an error (type: vocabulary).
+     * "it good deal" missing "is" and "a" is an error: original: "it good deal", correction: "it's a good deal" (type: grammar).
+   - If the student answers with only an isolated adjective or noun (e.g. answering "sad", "good", "coat" to a full open question):
+     * This is incomplete and unnatural speech in conversation.
+     * Set naturalnessStatus: 'unnatural'.
+     * Mark grammarStatus: 'minor'.
+     * In corrections, show the natural complete phrase (e.g. original: "sad", correction: "I feel sad today" or "I'm just looking around", type: 'grammar', explanationRu: 'Одиночное слово звучит слишком отрывисто. В диалоге лучше использовать полную фразу.').
+     * In betterSentence, provide the full natural response.
 
 2. STRICT SEPARATION OF GRAMMAR vs VOCABULARY:
    NEVER classify a vocabulary collocation error as a grammar error, and vice versa!
@@ -319,7 +348,7 @@ CRITICAL RULES FOR APPROPRIATENESS OF ERRORS ("УМЕСТНОСТЬ ОШИБОК
       },
     });
 
-    const text = response.text?.trim();
+    const text = cleanJsonText(response.text);
     if (!text) return null;
     const parsed = JSON.parse(text) as EvaluationResult;
     return parsed;
@@ -410,7 +439,7 @@ Provide:
       },
     });
 
-    const text = response.text?.trim();
+    const text = cleanJsonText(response.text);
     if (!text) return null;
     const parsed = JSON.parse(text);
     return {

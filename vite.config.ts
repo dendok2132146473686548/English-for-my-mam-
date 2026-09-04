@@ -46,8 +46,11 @@ function apiServerPlugin(): Plugin {
         expressReq.body = body;
 
         try {
-          const { handleChatRoute, handleEvaluateRoute, handleReportRoute } = await import('./src/server/api.ts');
+          const { handleChatRoute, handleEvaluateRoute, handleReportRoute, handleStatusRoute } = await import('./src/server/api.ts');
 
+          if (url === '/api/status') {
+            return await handleStatusRoute(expressReq, expressRes);
+          }
           if (url === '/api/chat') {
             return await handleChatRoute(expressReq, expressRes);
           }
@@ -74,7 +77,7 @@ function apiServerPlugin(): Plugin {
 
 export default defineConfig(() => {
   return {
-    base: './',
+    base: '/',
     plugins: [react(), tailwindcss(), apiServerPlugin()],
     resolve: {
       alias: {
