@@ -91,18 +91,19 @@ export const EvaluationBadge: React.FC<EvaluationBadgeProps> = ({ evaluation, mo
       {/* Grammar Corrections */}
       {grammarCorrections.length > 0 && (
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-rose-600">
-            <span>Grammar</span>
+          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-rose-700">
+            <span className="inline-block w-2 h-2 rounded-full bg-rose-500"></span>
+            <span>Grammar • Грамматика</span>
           </div>
           {grammarCorrections.map((c, i) => (
-            <div key={i} className="flex flex-col text-xs bg-rose-50/60 p-2 rounded-lg border border-rose-100">
+            <div key={i} className="flex flex-col text-xs bg-rose-50/70 p-2.5 rounded-lg border border-rose-200/80">
               <div className="flex items-center gap-2 flex-wrap font-mono text-[13px]">
                 <span className="text-rose-700 font-medium line-through">❌ {c.original}</span>
                 <span className="text-slate-400">→</span>
-                <span className="text-emerald-700 font-bold bg-emerald-100/70 px-1.5 py-0.5 rounded">✅ {c.correction}</span>
+                <span className="text-emerald-700 font-bold bg-emerald-100/80 px-1.5 py-0.5 rounded">✅ {c.correction}</span>
               </div>
               {c.explanationRu && (
-                <span className="mt-1 text-[11px] text-slate-600">{c.explanationRu}</span>
+                <span className="mt-1.5 text-[12px] text-slate-700 font-sans leading-snug">{c.explanationRu}</span>
               )}
             </div>
           ))}
@@ -112,18 +113,19 @@ export const EvaluationBadge: React.FC<EvaluationBadgeProps> = ({ evaluation, mo
       {/* Vocabulary Corrections */}
       {vocabCorrections.length > 0 && (
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-600">
-            <span>Vocabulary</span>
+          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-700">
+            <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+            <span>Vocabulary • Слова и фразы</span>
           </div>
           {vocabCorrections.map((c, i) => (
-            <div key={i} className="flex flex-col text-xs bg-amber-50/60 p-2 rounded-lg border border-amber-100">
+            <div key={i} className="flex flex-col text-xs bg-amber-50/70 p-2.5 rounded-lg border border-amber-200/80">
               <div className="flex items-center gap-2 flex-wrap font-mono text-[13px]">
                 <span className="text-amber-800 font-medium line-through">❌ {c.original}</span>
                 <span className="text-slate-400">→</span>
-                <span className="text-emerald-700 font-bold bg-emerald-100/70 px-1.5 py-0.5 rounded">✅ {c.correction}</span>
+                <span className="text-emerald-700 font-bold bg-emerald-100/80 px-1.5 py-0.5 rounded">✅ {c.correction}</span>
               </div>
               {c.explanationRu && (
-                <span className="mt-1 text-[11px] text-slate-600">{c.explanationRu}</span>
+                <span className="mt-1.5 text-[12px] text-slate-700 font-sans leading-snug">{c.explanationRu}</span>
               )}
             </div>
           ))}

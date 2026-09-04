@@ -182,114 +182,330 @@ export function isLikelyGibberish(text: string): boolean {
   return gibberishWordCount > 0 && gibberishWordCount === words.length;
 }
 
-// Known grammar/vocabulary rule patterns for fallback evaluation
+// Known grammar and vocabulary rule patterns for intelligent fallback evaluation
 interface RuleDef {
   pattern: RegExp;
   original: (match: RegExpMatchArray) => string;
   correction: (match: RegExpMatchArray) => string;
   type: 'grammar' | 'vocabulary';
-  betterFull?: (input: string) => string;
   explanationRu: string;
 }
 
-const COMMON_RULES: RuleDef[] = [
+export const COMMON_RULES: RuleDef[] = [
+  // ==================== GRAMMAR RULES ====================
   // 1. have went -> went / have gone
   {
     pattern: /\bhave went\b/i,
     original: () => 'have went',
     correction: () => 'went',
     type: 'grammar',
-    explanationRu: 'После "have" используется третья форма глагола (have gone), либо в прошедшем времени — просто "went".',
+    explanationRu: 'После вспомогательного "have" требуется третья форма неправильного глагола (have gone), либо в Past Simple — просто "went".',
   },
-  // 2. made a photo / make photo -> took a photo
-  {
-    pattern: /\b(made|make|making)\s+a?\s*photos?\b/i,
-    original: (m) => m[0],
-    correction: (m) => m[0].toLowerCase().includes('made') ? 'took a photo' : 'take a photo',
-    type: 'vocabulary',
-    explanationRu: 'В английском с фотографиями используется глагол "take" (take a photo / took a photo), а не "make".',
-  },
-  // 3. I am agree -> I agree
+  // 2. I am agree / I'm agree -> I agree
   {
     pattern: /\b(i am|i'm)\s+agree\b/i,
     original: (m) => m[0],
     correction: () => 'I agree',
     type: 'grammar',
-    explanationRu: 'Глагол "agree" означает "соглашаться", поэтому вспомогательный глагол "am" здесь не нужен: просто "I agree".',
+    explanationRu: '"Agree" — это самостоятельный смысловой глагол ("соглашаться"), вспомогательный глагол "am" здесь не нужен.',
   },
-  // 4. more better -> better
+  // 3. Did you went / didn't saw / didn't went
   {
-    pattern: /\bmore better\b/i,
-    original: () => 'more better',
-    correction: () => 'better',
-    type: 'grammar',
-    explanationRu: '"Better" — это уже сравнительная степень от "good", слово "more" добавлять нельзя.',
-  },
-  // 5. He/she/it go -> goes
-  {
-    pattern: /\b(he|she|it)\s+go\b/i,
+    pattern: /\bdid\s+(you|he|she|they|we)\s+went\b/i,
     original: (m) => m[0],
-    correction: (m) => `${m[1]} goes`,
+    correction: (m) => `did ${m[1]} go`,
     type: 'grammar',
-    explanationRu: 'В Present Simple для he/she/it к глаголу добавляется окончание -es: "goes".',
+    explanationRu: 'После вспомогательного глагола "did" смысловой глагол всегда ставится в начальной форме (infinitive without to).',
   },
-  // 6. They is / We is / You is -> are
   {
-    pattern: /\b(they|we|you)\s+is\b/i,
+    pattern: /\bdidn't\s+(went|saw|came|had|took)\b/i,
     original: (m) => m[0],
-    correction: (m) => `${m[1]} are`,
+    correction: (m) => {
+      const verbMap: Record<string, string> = {
+        went: 'go',
+        saw: 'see',
+        came: 'come',
+        had: 'have',
+        took: 'take',
+      };
+      return `didn't ${verbMap[m[1].toLowerCase()] || m[1]}`;
+    },
     type: 'grammar',
-    explanationRu: 'С местоимениями во множественном числе используется форма глагола "are", а не "is".',
+    explanationRu: 'После "didn\'t" смысловой глагол возвращается в начальную форму (didn\'t go, didn\'t see).',
   },
-  // 7. Did you went -> Did you go
+  // 4. He/she/it don't -> doesn't
   {
-    pattern: /\bdid\s+you\s+went\b/i,
-    original: () => 'did you went',
-    correction: () => 'did you go',
+    pattern: /\b(he|she|it)\s+don't\b/i,
+    original: (m) => m[0],
+    correction: (m) => `${m[1]} doesn't`,
     type: 'grammar',
-    explanationRu: 'После вспомогательного глагола "did" смысловой глагол ставится в начальной форме (did you go).',
+    explanationRu: 'Для третьего лица единственного числа (he/she/it) в отрицании используется "doesn\'t", а не "don\'t".',
   },
-  // 8. make sports -> do sports / play sports
-  {
-    pattern: /\b(make|makes|made)\s+sports?\b/i,
-    original: (m) => m[0],
-    correction: () => 'do sports',
-    type: 'vocabulary',
-    explanationRu: 'Со спортом по-английски говорят "do sports" или "play sports", а не "make sports".',
-  },
-  // 9. strong rain / big rain -> heavy rain
-  {
-    pattern: /\b(strong|big)\s+rain\b/i,
-    original: (m) => m[0],
-    correction: () => 'heavy rain',
-    type: 'vocabulary',
-    explanationRu: 'Сильный дождь по-английски — устойчивое словосочетание "heavy rain".',
-  },
-  // 10. he have / she have -> has
+  // 5. He/she/it have -> has
   {
     pattern: /\b(he|she|it)\s+have\b/i,
     original: (m) => m[0],
     correction: (m) => `${m[1]} has`,
     type: 'grammar',
-    explanationRu: 'С he/she/it используется форма глагола "has".',
+    explanationRu: 'С местоимениями he/she/it глагол "have" имеет форму "has".',
   },
-  // 11. I no like / I not like -> I don't like
+  // 6. He/she/it go / like / want (missing -s)
   {
-    pattern: /\bi\s+(no|not)\s+like\b/i,
+    pattern: /\b(he|she|it)\s+(go|like|want|need|live)\b/i,
     original: (m) => m[0],
-    correction: () => "I don't like",
+    correction: (m) => {
+      const base = m[2].toLowerCase();
+      const sForm = base === 'go' ? 'goes' : `${base}s`;
+      return `${m[1]} ${sForm}`;
+    },
     type: 'grammar',
-    explanationRu: 'В Present Simple отрицание строится с помощью "don\'t": "I don\'t like".',
+    explanationRu: 'В Present Simple к глаголам с he/she/it обязательно добавляется окончание -s/-es.',
   },
-  // 12. where is toilet -> where is the toilet
+  // 7. They is / We is / You is -> are
+  {
+    pattern: /\b(they|we|you)\s+is\b/i,
+    original: (m) => m[0],
+    correction: (m) => `${m[1]} are`,
+    type: 'grammar',
+    explanationRu: 'С местоимениями множественного числа используется форма глагола to be "are", а не "is".',
+  },
+  // 8. We was / They was / You was -> were
+  {
+    pattern: /\b(we|they|you)\s+was\b/i,
+    original: (m) => m[0],
+    correction: (m) => `${m[1]} were`,
+    type: 'grammar',
+    explanationRu: 'В прошедшем времени с местоимениями we/they/you используется форма "were".',
+  },
+  // 9. I no like / I not like -> I don't like
+  {
+    pattern: /\bi\s+(no|not)\s+(like|want|know|understand)\b/i,
+    original: (m) => m[0],
+    correction: (m) => `I don't ${m[2]}`,
+    type: 'grammar',
+    explanationRu: 'Отрицание в Present Simple для глаголов строится с помощью вспомогательного глагола "don\'t".',
+  },
+  // 10. More better / more easier
+  {
+    pattern: /\bmore\s+(better|easier|faster|bigger)\b/i,
+    original: (m) => m[0],
+    correction: (m) => m[1],
+    type: 'grammar',
+    explanationRu: 'Сравнительная степень у этих слов уже выражена суффиксом или особой формой; слово "more" является избыточным.',
+  },
+  // 11. In Monday / In Sunday -> On Monday / On Sunday
+  {
+    pattern: /\bin\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i,
+    original: (m) => m[0],
+    correction: (m) => `on ${m[1].charAt(0).toUpperCase() + m[1].slice(1)}`,
+    type: 'grammar',
+    explanationRu: 'С днями недели в английском языке всегда используется предлог "on" (on Monday, on Sunday).',
+  },
+  // 12. At the morning / At the evening -> In the morning / In the evening
+  {
+    pattern: /\bat\s+the\s+(morning|afternoon|evening)\b/i,
+    original: (m) => m[0],
+    correction: (m) => `in the ${m[1]}`,
+    type: 'grammar',
+    explanationRu: 'Со временем суток употребляется предлог "in": in the morning, in the evening (но: at night).',
+  },
+  // 13. Depend of -> depend on
+  {
+    pattern: /\bdepends?\s+of\b/i,
+    original: (m) => m[0],
+    correction: (m) => m[0].toLowerCase().includes('depends') ? 'depends on' : 'depend on',
+    type: 'grammar',
+    explanationRu: 'Глагол "depend" в английском языке управляется предлогом "on" (depend on), а не "of".',
+  },
+  // 14. Listen music -> listen to music
+  {
+    pattern: /\blisten(s|ed|ing)?\s+(music|radio|him|her|them)\b/i,
+    original: (m) => m[0],
+    correction: (m) => {
+      const verb = m[0].split(/\s+/)[0];
+      const target = m[2];
+      return `${verb} to ${target}`;
+    },
+    type: 'grammar',
+    explanationRu: 'После глагола "listen" перед объектом обязательно требуется предлог "to" (listen to music).',
+  },
+  // 15. Explain me -> explain to me
+  {
+    pattern: /\bexplain\s+(me|us|him|her|them)\b/i,
+    original: (m) => m[0],
+    correction: (m) => `explain to ${m[1]}`,
+    type: 'grammar',
+    explanationRu: 'В отличие от русского языка, глагол "explain" требует предлога "to" перед лицом (explain to me).',
+  },
+  // 16. Two childs / mans / womans -> children / men / women
+  {
+    pattern: /\b(\w+)\s+childs\b/i,
+    original: (m) => m[0],
+    correction: (m) => `${m[1]} children`,
+    type: 'grammar',
+    explanationRu: '"Child" — исключение во множественном числе, правильная форма — "children".',
+  },
+  {
+    pattern: /\b(\w+)\s+(mans|womans)\b/i,
+    original: (m) => m[0],
+    correction: (m) => `${m[1]} ${m[2].toLowerCase() === 'mans' ? 'men' : 'women'}`,
+    type: 'grammar',
+    explanationRu: 'Множественное число слов "man" и "woman" образуется не по общему правилу: "men" и "women".',
+  },
+  // 17. Went to home -> went home
+  {
+    pattern: /\b(go|goes|went|come|came)\s+to\s+home\b/i,
+    original: (m) => m[0],
+    correction: (m) => `${m[1]} home`,
+    type: 'grammar',
+    explanationRu: 'Слово "home" в значении направления движения используется без предлога "to" (go home, went home).',
+  },
+  // 18. Where is toilet -> where is the toilet
   {
     pattern: /\bwhere\s+is\s+toilet\b/i,
     original: () => 'where is toilet',
     correction: () => 'where is the toilet',
     type: 'grammar',
-    explanationRu: 'Перед конкретным существительным "toilet" нужен определённый артикль "the".',
+    explanationRu: 'Перед конкретным исчисляемым существительным в единственном числе необходим определённый артикль "the".',
+  },
+  // 19. Wait you / wait me -> wait for you / wait for me
+  {
+    pattern: /\bwait\s+(me|you|him|her|them|us)\b/i,
+    original: (m) => m[0],
+    correction: (m) => `wait for ${m[1]}`,
+    type: 'grammar',
+    explanationRu: 'Глагол "wait" требует предлога "for" при указании на того, кого ждут (wait for you).',
+  },
+  // 20. Good in English -> good at English
+  {
+    pattern: /\bgood\s+in\s+(english|math|cooking|sports)\b/i,
+    original: (m) => m[0],
+    correction: (m) => `good at ${m[1]}`,
+    type: 'grammar',
+    explanationRu: 'В значении "хорошо разбираться в чем-то" используется предлог "at" (good at English).',
+  },
+
+  // ==================== VOCABULARY & COLLOCATION RULES ====================
+  // 21. Made a photo / make photo -> took a photo / take a photo
+  {
+    pattern: /\b(made|make|making)\s+a?\s*photos?\b/i,
+    original: (m) => m[0],
+    correction: (m) => m[0].toLowerCase().includes('made') ? 'took a photo' : 'take a photo',
+    type: 'vocabulary',
+    explanationRu: 'Устойчивое словосочетание: в английском языке с фотографиями используется глагол "take" (take a photo / took a photo), а не "make".',
+  },
+  // 22. Do a mistake / did a mistake -> make a mistake / made a mistake
+  {
+    pattern: /\b(do|did|doing|does)\s+a?\s*mistakes?\b/i,
+    original: (m) => m[0],
+    correction: (m) => m[0].toLowerCase().includes('did') ? 'made a mistake' : 'make a mistake',
+    type: 'vocabulary',
+    explanationRu: 'Лексическая сочетаемость: со словом "mistake" всегда употребляется глагол "make" (make a mistake / made a mistake).',
+  },
+  // 23. Make sports -> do sports / play sports
+  {
+    pattern: /\b(make|makes|made)\s+sports?\b/i,
+    original: (m) => m[0],
+    correction: () => 'do sports',
+    type: 'vocabulary',
+    explanationRu: 'В значении "заниматься спортом" говорят "do sports" или "play sports", сочетание "make sports" неестественно.',
+  },
+  // 24. Strong rain / big rain -> heavy rain
+  {
+    pattern: /\b(strong|big)\s+rain\b/i,
+    original: (m) => m[0],
+    correction: () => 'heavy rain',
+    type: 'vocabulary',
+    explanationRu: 'Сильный, проливной дождь в английском языке выражается устойчивым сочетанием "heavy rain".',
+  },
+  // 25. Drink soup -> eat soup / have soup
+  {
+    pattern: /\b(drink|drank|drinking)\s+soup\b/i,
+    original: (m) => m[0],
+    correction: (m) => m[0].toLowerCase().includes('drank') ? 'ate soup' : 'eat soup',
+    type: 'vocabulary',
+    explanationRu: 'В англоязычных странах суп не "пьют", а "едят" ложкой: "eat soup" или "have soup".',
+  },
+  // 26. Drink medicine / drink pills / drink tablets -> take medicine / take pills
+  {
+    pattern: /\b(drink|drank|drinking)\s+(medicine|pills|tablets)\b/i,
+    original: (m) => m[0],
+    correction: (m) => {
+      const past = m[0].toLowerCase().includes('drank');
+      return `${past ? 'took' : 'take'} ${m[2]}`;
+    },
+    type: 'vocabulary',
+    explanationRu: 'Лекарства и таблетки по-английски "принимают" с глаголом "take" (take medicine / take pills).',
+  },
+  // 27. Feel myself good/bad/well -> feel good/bad/well
+  {
+    pattern: /\bfeel\s+myself\s+(good|bad|well|tired|happy|sick)\b/i,
+    original: (m) => m[0],
+    correction: (m) => `feel ${m[1]}`,
+    type: 'vocabulary',
+    explanationRu: 'В английском глагол "feel" не требует возвратного местоимения "myself" (калька с русского "чувствовать себя"). Правильно: "I feel good".',
+  },
+  // 28. Say me / said me -> tell me / told me
+  {
+    pattern: /\b(say|said)\s+(me|us|him|her|them)\b/i,
+    original: (m) => m[0],
+    correction: (m) => m[1].toLowerCase() === 'said' ? `told ${m[2]}` : `tell ${m[2]}`,
+    type: 'vocabulary',
+    explanationRu: 'Когда мы указываем, кому именно адресованы слова, используется глагол "tell" (tell me / told me), а не "say".',
+  },
+  // 29. Learn English to children / learn someone -> teach English to children / teach someone
+  {
+    pattern: /\blearn\s+(english|someone|children|kids)\s+to\b/i,
+    original: (m) => m[0],
+    correction: (m) => m[0].replace(/learn/i, 'teach'),
+    type: 'vocabulary',
+    explanationRu: '"Learn" означает "учиться самому", а "обучать других" — это "teach".',
+  },
+  // 30. Can you borrow me -> can you lend me
+  {
+    pattern: /\b(can\s+you|could\s+you)\s+borrow\s+me\b/i,
+    original: (m) => m[0],
+    correction: (m) => `${m[1]} lend me`,
+    type: 'vocabulary',
+    explanationRu: '"Borrow" означает "брать взаймы", а "одолжить кому-то" — это глагол "lend".',
+  },
+  // 31. Comfortable time (for meeting) -> convenient time
+  {
+    pattern: /\bcomfortable\s+time\b/i,
+    original: () => 'comfortable time',
+    correction: () => 'convenient time',
+    type: 'vocabulary',
+    explanationRu: '"Comfortable" относится к физическому комфорту (кресло, обувь), а удобное время или дата встречи — "convenient time".',
+  },
+  // 32. High price vs expensive price
+  {
+    pattern: /\bexpensive\s+price\b/i,
+    original: () => 'expensive price',
+    correction: () => 'high price',
+    type: 'vocabulary',
+    explanationRu: 'Товар может быть "expensive", но сама цена бывает "high" (высокая) или "low" (низкая).',
   },
 ];
+
+// Whitelist of natural conversational expressions that must NEVER be flagged as errors
+const NATURAL_CONVERSATIONAL_WHITELIST = [
+  /^(a\s+)?(cup\s+of\s+)?(coffee|tea|water|juice|latte|cappuccino)(\s+with\s+\w+)?(,\s*please)?\.?$/i,
+  /^(two|three|four|one)\s+(tickets?|coffees?|seats?|croissants?)(,\s*please)?\.?$/i,
+  /^(can|could)\s+i\s+(have|get|take|order)\b/i,
+  /^(i\s*['’]?\s*m|i\s+am)\s+(good|fine|doing\s+well|great|okay)(,\s*thanks?|\s+thank\s+you)?\.?$/i,
+  /^(yes|yeah|sure|yep|no|nope|of\s+course)(,\s*please|\s+thanks?|\s+thank\s+you)?\.?$/i,
+  /^(just\s+looking|just\s+browsing)(,\s*thank\s+you|,\s*thanks)?\.?$/i,
+  /^(that\s+sounds?|sounds?)\s+(great|good|lovely|nice|wonderful|delicious|fun)\.?$/i,
+  /^(i\s*['’]?\s*d|i\s+would)\s+love\s+to\b/i,
+  /^(here\s+you\s+go|there\s+you\s+go|never\s+mind|no\s+problem|you\s*['’]?\s*re\s+welcome)\.?$/i,
+  /^(see\s+you|have\s+a\s+(good|nice|great)\s+(day|flight|trip|evening))\.?$/i,
+  /^(how\s+much\s+is\s+it|how\s+much\s+does\s+it\s+cost|where\s+is\s+the\s+\w+)\??$/i,
+];
+
+export function isNaturalConversationalEllipsis(text: string): boolean {
+  const clean = text.trim();
+  return NATURAL_CONVERSATIONAL_WHITELIST.some((re) => re.test(clean));
+}
 
 /**
  * Fallback evaluator that runs on client if server is unreachable
@@ -314,11 +530,26 @@ export function evaluateAnswerLocally(params: {
       corrections: [],
       betterSentence: null,
       scores: { grammar: 20, vocabulary: 20, naturalness: 20, context: 20 },
-      teacherExplanationRu: 'Кажется, в тексте опечатки или случайный набор букв. Попробуйте написать ответ заново!',
+      teacherExplanationRu: "⚠️ I couldn't understand your answer. Please try again.",
     };
   }
 
-  // 2. Rule-based correction matching
+  // 2. Appropriateness check: whitelist of natural conversational phrases
+  if (isNaturalConversationalEllipsis(trimmed)) {
+    return {
+      isGibberish: false,
+      grammarStatus: 'correct',
+      vocabularyStatus: 'correct',
+      naturalnessStatus: 'natural',
+      contextStatus: 'relevant',
+      corrections: [],
+      betterSentence: null,
+      scores: { grammar: 100, vocabulary: 100, naturalness: 100, context: 100 },
+      teacherExplanationRu: 'Отличный живой ответ! В разговорной речи звучит естественно и грамотно.',
+    };
+  }
+
+  // 3. Rule-based correction matching
   const corrections: EvaluationResult['corrections'] = [];
   let betterSentence = trimmed;
 
