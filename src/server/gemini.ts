@@ -24,6 +24,35 @@ function getAiClient(): GoogleGenAI | null {
   return aiInstance;
 }
 
+// Order of models to use. If one hits 429 (quota limit) or 503 (high demand), the engine cascades to the next.
+const CANDIDATE_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'];
+
+async function generateWithFallback(
+  ai: GoogleGenAI,
+  requestParams: {
+    contents: any;
+    config: any;
+  }
+) {
+  let lastError: unknown = null;
+  for (const model of CANDIDATE_MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: requestParams.contents,
+        config: requestParams.config,
+      });
+      return response;
+    } catch (err: any) {
+      lastError = err;
+      const status = err?.status || err?.code;
+      console.warn(`Gemini model ${model} temporarily unavailable or quota reached (status: ${status}). Cascading to next model...`);
+    }
+  }
+  console.error('All Gemini candidate models failed:', lastError);
+  return null;
+}
+
 export interface ChatResponsePayload {
   reply: string;
   situationTitle: string;
@@ -86,8 +115,7 @@ RULES:
       });
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const response = await generateWithFallback(ai, {
       contents: formattedContents,
       config: {
         systemInstruction,
@@ -217,8 +245,7 @@ CRITICAL RULES FOR APPROPRIATENESS OF ERRORS ("УМЕСТНОСТЬ ОШИБОК
    - If the student was already completely correct, provide an optional idiomatic native alternative or null.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const response = await generateWithFallback(ai, {
       contents: `Please evaluate this student answer: "${userText}" for question: "${question}"`,
       config: {
         systemInstruction,
@@ -331,8 +358,7 @@ Provide:
     .join('\n');
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const response = await generateWithFallback(ai, {
       contents: `Here is the conversation log:\n${dialogueSummary}`,
       config: {
         systemInstruction,

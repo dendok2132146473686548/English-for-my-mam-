@@ -22,7 +22,8 @@ export async function requestChatReply(params: {
       body: JSON.stringify(params),
     });
 
-    if (res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
       if (data && data.reply) {
         return data;
@@ -49,7 +50,8 @@ export async function requestEvaluation(params: {
       body: JSON.stringify(params),
     });
 
-    if (res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
       if (data && typeof data.isGibberish === 'boolean') {
         return data;
@@ -75,7 +77,8 @@ export async function requestReport(params: {
       body: JSON.stringify(params),
     });
 
-    if (res.ok) {
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
       if (data && data.scores) {
         return data;
